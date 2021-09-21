@@ -59,6 +59,32 @@ pub fn initialize_board() -> Board
 	board
 }
 
+trait Piece {
+	fn theory_valid_move(Vec) -> bool;
+}
+
+trait Notation {
+	fn use(Board, String) -> Board;
+}
+
+//struct AlgebraicNotation {}
+
+impl Piece for Pawn {
+	fn theory_valid_move(move: Vec) -> bool {
+
+	}
+}
+
+impl Notation for LongAlgebraicNotation {
+	fn use(board: Board, move: String) -> Board {
+
+		String startPiece = move.chars()[..move.len()-(move.len()-2)];
+		String endPiece = move.chars()[move.len() - (move.len()-2)..];
+		
+		board
+	}
+}
+
 
 #[cfg(test)]
 mod tests {
