@@ -893,7 +893,7 @@ impl Board {
 
 pub trait Notation {
     fn new(board: Board, turn: usize) -> Self;
-    fn do_move(&mut self, p_move: &str);
+    fn do_move(&mut self, p_move: &str) -> bool;
     fn find_piece(&self, piece: char, rank: usize, file: usize) -> Vec<FoundPiece>;
 }
 
@@ -964,7 +964,7 @@ impl Notation for AlgebraicNotation {
         matches
     }
 
-    fn do_move(&mut self, p_move: &str) {
+    fn do_move(&mut self, p_move: &str) -> bool {
         let mut p_move_chars: Vec<char> = p_move.chars().collect();
 
         let lookup_piece: char;
@@ -1033,7 +1033,7 @@ impl Notation for AlgebraicNotation {
         //println!("{:?}", start);
         if start.len() == 0 {
             //println!("Not found");
-            return;
+            return false;
         }
 
         rank = 0;
@@ -1056,11 +1056,15 @@ impl Notation for AlgebraicNotation {
 
         if rank == 0 || file == 0 {
             println!("Insufficient");
-            return;
+            return false;
         }
 
         // Is this valid?
+		let moveOccured:bool;
         for fp in start {
+			if moveOccured {
+				break;
+			}
             if self.board.table[fp.position.0][fp.position.1]
                 .as_ref()
                 .unwrap()
@@ -1079,8 +1083,13 @@ impl Notation for AlgebraicNotation {
                         .clone(),
                 );
                 self.board.table[fp.position.0][fp.position.1] = None;
+				moveOccured = true;
             }
         }
+
+		if !moveOccured {
+			return false;
+		}
 
         //println!("{:?}", self.board.table);
 
@@ -1092,5 +1101,7 @@ impl Notation for AlgebraicNotation {
         } else {
             self.turn = _WHITE_PIECE;
         }
+
+		true
     }
 }
