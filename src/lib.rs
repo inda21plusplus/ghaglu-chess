@@ -313,7 +313,13 @@ pub trait PieceClone {
     fn clone_box(&self) -> Box<dyn PieceTrait>;
 }
 
-pub trait PieceTrait: PieceClone {
+pub trait PieceCommon {
+    fn set_color(&mut self, color: usize);
+    fn get_color(&self) -> usize;
+    fn movement(&mut self, movement: bool) -> usize;
+}
+
+pub trait PieceTrait: PieceClone + PieceCommon {
     fn theory_valid_move(
         &self,
         board: &Board,
@@ -322,9 +328,6 @@ pub trait PieceTrait: PieceClone {
         new_position: (isize, isize),
     ) -> bool;
     fn get_identity(&self) -> String;
-    fn set_color(&mut self, color: usize);
-    fn get_color(&self) -> usize;
-    fn movement(&mut self, movement: bool) -> usize;
 }
 
 impl fmt::Debug for dyn PieceTrait {
@@ -350,12 +353,25 @@ impl Clone for Box<dyn PieceTrait> {
     }
 }
 
-/*impl<T> PieceTrait for T
-where T: Clone + 'static () {
-    fn clone(&self) -> Box<dyn PieceTrait> {
-        Box::new(self.clone())
-    }
-}*/
+macro_rules! impl_piececommon {
+	($($t:ty),+ $(,)?) => ($(
+		impl PieceCommon for $t {
+			fn set_color(&mut self, color: usize) {
+				self.color = color;
+			}
+			fn get_color(&self) -> usize {
+				self.color
+			}
+
+			fn movement(&mut self, movement: bool) -> usize {
+				if movement {
+					self.has_moved += 1;
+				}
+				self.has_moved
+			}
+		}
+	)+);
+}
 
 impl PieceTrait for Pawn {
     fn theory_valid_move(
@@ -453,6 +469,7 @@ impl PieceTrait for Pawn {
                     && cmp::max(new_position.1, position.1) - cmp::min(new_position.1, position.1)
                         == 1
                 {
+                    // increase movement
                     return true;
                 }
             } else {
@@ -474,6 +491,7 @@ impl PieceTrait for Pawn {
                     && cmp::max(new_position.1, position.1) - cmp::min(new_position.1, position.1)
                         == 1
                 {
+                    //increase movement
                     return true;
                 }
             }
@@ -484,19 +502,8 @@ impl PieceTrait for Pawn {
     fn get_identity(&self) -> String {
         "P".to_string()
     }
-    fn set_color(&mut self, color: usize) {
-        self.color = color;
-    }
-    fn get_color(&self) -> usize {
-        self.color
-    }
-    fn movement(&mut self, movement: bool) -> usize {
-        if movement {
-            self.has_moved += 1;
-        }
-        self.has_moved
-    }
 }
+impl_piececommon!(Pawn);
 
 impl PieceTrait for Rook {
     fn theory_valid_move(
@@ -510,30 +517,22 @@ impl PieceTrait for Rook {
             return false;
         }*/
 
-        /* Cleaner code? TODO */
         // sideways
         if position.0 == new_position.0 {
             let delta_x =
                 cmp::max(position.1, new_position.1) - cmp::min(position.1, new_position.1);
-            if position.1 > new_position.1 {
-                for i in 1..delta_x {
-                    if board.table[(position.0 - 1) as usize][(position.1 - 1 - i) as usize]
-                        .is_some()
-                    {
-                        return false;
-                    }
+
+            for i in 1..delta_x {
+                let check = if position.1 > new_position.1 {
+                    position.1 - 1 - i
+                } else {
+                    position.1 - 1 + i
+                };
+                if board.table[(position.0 - 1) as usize][check as usize].is_some() {
+                    return false;
                 }
-                return true;
-            } else {
-                for i in 1..delta_x {
-                    if board.table[(position.0 - 1) as usize][(position.1 - 1 + i) as usize]
-                        .is_some()
-                    {
-                        return false;
-                    }
-                }
-                return true;
             }
+            return true;
         }
 
         if new_position.1 != position.1 {
@@ -548,7 +547,6 @@ impl PieceTrait for Rook {
                 }
             }
         } else {
-            //println!("{:?}", either::Either::Right(( position.0-1..new_position.0-1).rev()));
             for i in (new_position.0 - 1..position.0 - 1).rev() {
                 if (board.table[(i as usize)][((position.1 - 1) as usize)]).is_some() {
                     //println!("{:?} {:?} {:?}", board.table[(i as usize)][((position.1-1) as usize)], i, position.1-1);
@@ -579,19 +577,9 @@ impl PieceTrait for Rook {
     fn get_identity(&self) -> String {
         "R".to_string()
     }
-    fn set_color(&mut self, color: usize) {
-        self.color = color;
-    }
-    fn get_color(&self) -> usize {
-        self.color
-    }
-    fn movement(&mut self, movement: bool) -> usize {
-        if movement {
-            self.has_moved += 1;
-        }
-        self.has_moved
-    }
 }
+
+impl_piececommon!(Rook);
 
 impl PieceTrait for Knight {
     fn theory_valid_move(
@@ -630,19 +618,8 @@ impl PieceTrait for Knight {
     fn get_identity(&self) -> String {
         "K".to_string()
     }
-    fn set_color(&mut self, color: usize) {
-        self.color = color;
-    }
-    fn get_color(&self) -> usize {
-        self.color
-    }
-    fn movement(&mut self, movement: bool) -> usize {
-        if movement {
-            self.has_moved += 1;
-        }
-        self.has_moved
-    }
 }
+impl_piececommon!(Knight);
 
 impl PieceTrait for Bishop {
     fn theory_valid_move(
@@ -667,44 +644,30 @@ impl PieceTrait for Bishop {
             let delta_y =
                 cmp::max(position.0, new_position.0) - cmp::min(position.0, new_position.0);
             if delta_x == delta_y {
-                /* Validation, urgh, cleaner code? TODO FIXME */
-                if new_position.0 > position.0 && new_position.1 > position.1 {
-                    for i in 1..delta_y {
-                        if board.table[(position.0 - 1 + i) as usize][(position.1 - 1 + i) as usize]
-                            .is_some()
-                        {
-                            return false;
+                /* Validation, is this correct? TODO FIXME */
+
+                for i in 1..delta_y {
+                    let check;
+                    let check2 = if new_position.0 > position.0 {
+                        check = position.0 - 1 + i;
+                        if new_position.1 > position.1 {
+                            position.1 - 1 + i
+                        } else {
+                            position.1 - 1 - i
                         }
-                    }
-                    return true;
-                } else if new_position.0 > position.0 && new_position.1 < position.0 {
-                    for i in 1..delta_y {
-                        if board.table[(position.0 - 1 + i) as usize][(position.1 - 1 - i) as usize]
-                            .is_some()
-                        {
-                            return false;
+                    } else {
+                        check = position.0 - 1 - i;
+                        if new_position.1 > position.1 {
+                            position.1 - 1 + i
+                        } else {
+                            position.1 - 1 - i
                         }
+                    };
+                    if board.table[check as usize][check2 as usize].is_some() {
+                        return false;
                     }
-                    return true;
-                } else if new_position.0 < position.0 && new_position.1 > position.1 {
-                    for i in 1..delta_y {
-                        if board.table[(position.0 - 1 - i) as usize][(position.1 - 1 + i) as usize]
-                            .is_some()
-                        {
-                            return false;
-                        }
-                    }
-                    return true;
-                } else if new_position.0 < position.0 && new_position.1 < position.1 {
-                    for i in 1..delta_y {
-                        if board.table[(position.0 - 1 - i) as usize][(position.1 - 1 - i) as usize]
-                            .is_some()
-                        {
-                            return false;
-                        }
-                    }
-                    return true;
                 }
+                return true;
             }
         }
 
@@ -713,19 +676,9 @@ impl PieceTrait for Bishop {
     fn get_identity(&self) -> String {
         "B".to_string()
     }
-    fn set_color(&mut self, color: usize) {
-        self.color = color;
-    }
-    fn get_color(&self) -> usize {
-        self.color
-    }
-    fn movement(&mut self, movement: bool) -> usize {
-        if movement {
-            self.has_moved += 1;
-        }
-        self.has_moved
-    }
 }
+
+impl_piececommon!(Bishop);
 
 impl PieceTrait for Queen {
     fn theory_valid_move(
@@ -756,19 +709,8 @@ impl PieceTrait for Queen {
     fn get_identity(&self) -> String {
         "Q".to_string()
     }
-    fn set_color(&mut self, color: usize) {
-        self.color = color;
-    }
-    fn get_color(&self) -> usize {
-        self.color
-    }
-    fn movement(&mut self, movement: bool) -> usize {
-        if movement {
-            self.has_moved += 1;
-        }
-        self.has_moved
-    }
 }
+impl_piececommon!(Queen);
 
 impl PieceTrait for King {
     fn theory_valid_move(
@@ -796,19 +738,8 @@ impl PieceTrait for King {
     fn get_identity(&self) -> String {
         "K".to_string()
     }
-    fn set_color(&mut self, color: usize) {
-        self.color = color;
-    }
-    fn get_color(&self) -> usize {
-        self.color
-    }
-    fn movement(&mut self, movement: bool) -> usize {
-        if movement {
-            self.has_moved += 1;
-        }
-        self.has_moved
-    }
 }
+impl_piececommon!(King);
 
 impl Board {
     pub fn new() -> Board {
@@ -1060,11 +991,11 @@ impl Notation for AlgebraicNotation {
         }
 
         // Is this valid?
-		let moveOccured:bool;
+        let mut move_occured: bool = false;
         for fp in start {
-			if moveOccured {
-				break;
-			}
+            if move_occured {
+                break;
+            }
             if self.board.table[fp.position.0][fp.position.1]
                 .as_ref()
                 .unwrap()
@@ -1083,13 +1014,13 @@ impl Notation for AlgebraicNotation {
                         .clone(),
                 );
                 self.board.table[fp.position.0][fp.position.1] = None;
-				moveOccured = true;
+                move_occured = true;
             }
         }
 
-		if !moveOccured {
-			return false;
-		}
+        if !move_occured {
+            return false;
+        }
 
         //println!("{:?}", self.board.table);
 
@@ -1102,6 +1033,6 @@ impl Notation for AlgebraicNotation {
             self.turn = _WHITE_PIECE;
         }
 
-		true
+        true
     }
 }
