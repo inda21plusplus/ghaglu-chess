@@ -52,28 +52,63 @@ mod tests {
             has_moved: 0,
         };
 
-        assert_eq!(x.theory_valid_move(&board, false, (2, 1), (3, 1)).ok(), Some(true)); /* single step */
-        assert_eq!(q.theory_valid_move(&board, false, (7, 1), (6, 1)).ok(), Some(true)); /* single step */
-        assert_eq!(x.theory_valid_move(&board, false, (2, 1), (4, 1)).err(), Some(vec![AdjustPiece { piece: (3, 0), remove_piece: false, increase_movement: 2 }])); /* double step */
-        assert_eq!(q.theory_valid_move(&board, false, (7, 1), (5, 1)).err(), Some(vec![AdjustPiece { piece: (4, 0), remove_piece: false, increase_movement: 2 }])); /* double step */
+        assert_eq!(
+            x.theory_valid_move(&board, false, (2, 1), (3, 1)).ok(),
+            Some(true)
+        ); /* single step */
+        assert_eq!(
+            q.theory_valid_move(&board, false, (7, 1), (6, 1)).ok(),
+            Some(true)
+        ); /* single step */
+        assert_eq!(
+            x.theory_valid_move(&board, false, (2, 1), (4, 1)).err(),
+            Some(vec![AdjustPiece {
+                piece: (3, 0),
+                remove_piece: false,
+                increase_movement: 2
+            }])
+        ); /* double step */
+        assert_eq!(
+            q.theory_valid_move(&board, false, (7, 1), (5, 1)).err(),
+            Some(vec![AdjustPiece {
+                piece: (4, 0),
+                remove_piece: false,
+                increase_movement: 2
+            }])
+        ); /* double step */
 
         board.table[(2)][(0)] = Some(Box::new(xa)); /* insert pawn into table. human-wise: (3,1) => (2,0) in table */
-        assert_eq!(xa.theory_valid_move(&board, false, (2, 1), (4, 1)).ok(), Some(false)); /* double step */
+        assert_eq!(
+            xa.theory_valid_move(&board, false, (2, 1), (4, 1)).ok(),
+            Some(false)
+        ); /* double step */
 
         /* capture-move when it should not be capturing */
-        assert_eq!(x.theory_valid_move(&board, false, (2, 1), (3, 2)).ok(), Some(false));
-        assert_eq!(x.theory_valid_move(&board, false, (2, 2), (3, 1)).ok(), Some(false));
+        assert_eq!(
+            x.theory_valid_move(&board, false, (2, 1), (3, 2)).ok(),
+            Some(false)
+        );
+        assert_eq!(
+            x.theory_valid_move(&board, false, (2, 2), (3, 1)).ok(),
+            Some(false)
+        );
 
         /* capture moves */
         board.table[(2)][(1)] = Some(Box::new(q));
-        assert_eq!(xb.theory_valid_move(&board, true, (2, 1), (3, 2)).ok(), Some(true));
+        assert_eq!(
+            xb.theory_valid_move(&board, true, (2, 1), (3, 2)).ok(),
+            Some(true)
+        );
         board.table[(2)][(0)] = Some(Box::new(q));
-        assert_eq!(xc.theory_valid_move(&board, true, (2, 2), (3, 1)).ok(), Some(true));
+        assert_eq!(
+            xc.theory_valid_move(&board, true, (2, 2), (3, 1)).ok(),
+            Some(true)
+        );
     }
 
-	#[test]
-	fn en_passant_basic() {
-		let mut board = Board::new();
+    #[test]
+    fn en_passant_basic() {
+        let mut board = Board::new();
         let xd = Pawn {
             color: _WHITE_PIECE,
             has_moved: 2,
@@ -85,7 +120,10 @@ mod tests {
         board.table[3][2] = Some(Box::new(xd));
         board.table[3][3] = Some(Box::new(xe));
         // black should capture the white
-        assert_eq!(xe.theory_valid_move(&board, true, (4, 4), (3, 3)).ok(), Some(true));
+        assert_eq!(
+            xe.theory_valid_move(&board, true, (4, 4), (3, 3)).ok(),
+            Some(true)
+        );
 
         // white should capture the black
         let xf = Pawn {
@@ -98,8 +136,11 @@ mod tests {
         };
         board.table[(4)][(4)] = Some(Box::new(xf));
         board.table[(4)][(5)] = Some(Box::new(xg));
-        assert_eq!(xf.theory_valid_move(&board, true, (5, 5), (6, 6)).ok(), Some(true));
-	}
+        assert_eq!(
+            xf.theory_valid_move(&board, true, (5, 5), (6, 6)).ok(),
+            Some(true)
+        );
+    }
 
     #[test]
     fn rook_basic() {
@@ -116,27 +157,54 @@ mod tests {
         };
 
         /* basic test with default populated board */
-        assert_eq!(r.theory_valid_move(&board, false, (1, 1), (3, 1)).ok(), Some(false));
+        assert_eq!(
+            r.theory_valid_move(&board, false, (1, 1), (3, 1)).ok(),
+            Some(false)
+        );
         board.table[1][0] = None;
-        assert_eq!(r.theory_valid_move(&board, false, (1, 1), (3, 1)).ok(), Some(true));
+        assert_eq!(
+            r.theory_valid_move(&board, false, (1, 1), (3, 1)).ok(),
+            Some(true)
+        );
 
         /* Sideways */
-        assert_eq!(r.theory_valid_move(&board, false, (3, 1), (3, 3)).ok(), Some(true));
-        assert_eq!(r.theory_valid_move(&board, false, (3, 3), (3, 2)).ok(), Some(true));
+        assert_eq!(
+            r.theory_valid_move(&board, false, (3, 1), (3, 3)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            r.theory_valid_move(&board, false, (3, 3), (3, 2)).ok(),
+            Some(true)
+        );
 
         /* black */
-        assert_eq!(ra.theory_valid_move(&board, false, (8, 1), (6, 1)).ok(), Some(false));
+        assert_eq!(
+            ra.theory_valid_move(&board, false, (8, 1), (6, 1)).ok(),
+            Some(false)
+        );
         board.table[6][0] = None;
-        assert_eq!(ra.theory_valid_move(&board, false, (8, 1), (6, 1)).ok(), Some(true));
+        assert_eq!(
+            ra.theory_valid_move(&board, false, (8, 1), (6, 1)).ok(),
+            Some(true)
+        );
 
         board.table[5][0] = Some(Box::new(ra)); // place black rook to test capture
 
         /* capture */
-        assert_eq!(r.theory_valid_move(&board, true, (1, 1), (7, 1)).ok(), Some(false));
-        assert_eq!(r.theory_valid_move(&board, true, (1, 1), (6, 1)).ok(), Some(true)); // try capturing black rook
+        assert_eq!(
+            r.theory_valid_move(&board, true, (1, 1), (7, 1)).ok(),
+            Some(false)
+        );
+        assert_eq!(
+            r.theory_valid_move(&board, true, (1, 1), (6, 1)).ok(),
+            Some(true)
+        ); // try capturing black rook
 
         /* just illegal behavior */
-        assert_eq!(r.theory_valid_move(&board, true, (1, 1), (7, 3)).ok(), Some(false));
+        assert_eq!(
+            r.theory_valid_move(&board, true, (1, 1), (7, 3)).ok(),
+            Some(false)
+        );
     }
 
     #[test]
@@ -154,33 +222,87 @@ mod tests {
         };
 
         /* basic movement */
-        assert_eq!(k.theory_valid_move(&board, false, (1, 2), (3, 1)).ok(), Some(true));
-        assert_eq!(k.theory_valid_move(&board, false, (1, 2), (3, 3)).ok(), Some(true));
-        assert_eq!(k.theory_valid_move(&board, false, (1, 7), (3, 8)).ok(), Some(true));
-        assert_eq!(k.theory_valid_move(&board, false, (1, 7), (3, 6)).ok(), Some(true));
+        assert_eq!(
+            k.theory_valid_move(&board, false, (1, 2), (3, 1)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            k.theory_valid_move(&board, false, (1, 2), (3, 3)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            k.theory_valid_move(&board, false, (1, 7), (3, 8)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            k.theory_valid_move(&board, false, (1, 7), (3, 6)).ok(),
+            Some(true)
+        );
 
-        assert_eq!(ka.theory_valid_move(&board, false, (8, 2), (6, 1)).ok(), Some(true));
-        assert_eq!(ka.theory_valid_move(&board, false, (8, 2), (6, 3)).ok(), Some(true));
-        assert_eq!(ka.theory_valid_move(&board, false, (8, 7), (6, 8)).ok(), Some(true));
-        assert_eq!(ka.theory_valid_move(&board, false, (8, 7), (6, 6)).ok(), Some(true));
+        assert_eq!(
+            ka.theory_valid_move(&board, false, (8, 2), (6, 1)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            ka.theory_valid_move(&board, false, (8, 2), (6, 3)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            ka.theory_valid_move(&board, false, (8, 7), (6, 8)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            ka.theory_valid_move(&board, false, (8, 7), (6, 6)).ok(),
+            Some(true)
+        );
 
         /* small capturing test */
-        assert_eq!(k.theory_valid_move(&board, true, (5, 4), (7, 3)).ok(), Some(true));
-        assert_eq!(k.theory_valid_move(&board, true, (5, 4), (7, 5)).ok(), Some(true));
+        assert_eq!(
+            k.theory_valid_move(&board, true, (5, 4), (7, 3)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            k.theory_valid_move(&board, true, (5, 4), (7, 5)).ok(),
+            Some(true)
+        );
 
         /* fix board for free roaming */
         board.table[6][2] = None;
         board.table[6][4] = None;
 
         /* free roaming knight */
-        assert_eq!(k.theory_valid_move(&board, false, (5, 4), (7, 3)).ok(), Some(true));
-        assert_eq!(k.theory_valid_move(&board, false, (5, 4), (7, 5)).ok(), Some(true));
-        assert_eq!(k.theory_valid_move(&board, false, (5, 4), (6, 2)).ok(), Some(true));
-        assert_eq!(k.theory_valid_move(&board, false, (5, 4), (6, 6)).ok(), Some(true));
-        assert_eq!(k.theory_valid_move(&board, false, (5, 4), (4, 2)).ok(), Some(true));
-        assert_eq!(k.theory_valid_move(&board, false, (5, 4), (3, 3)).ok(), Some(true));
-        assert_eq!(k.theory_valid_move(&board, false, (5, 4), (3, 5)).ok(), Some(true));
-        assert_eq!(k.theory_valid_move(&board, false, (5, 4), (4, 6)).ok(), Some(true));
+        assert_eq!(
+            k.theory_valid_move(&board, false, (5, 4), (7, 3)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            k.theory_valid_move(&board, false, (5, 4), (7, 5)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            k.theory_valid_move(&board, false, (5, 4), (6, 2)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            k.theory_valid_move(&board, false, (5, 4), (6, 6)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            k.theory_valid_move(&board, false, (5, 4), (4, 2)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            k.theory_valid_move(&board, false, (5, 4), (3, 3)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            k.theory_valid_move(&board, false, (5, 4), (3, 5)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            k.theory_valid_move(&board, false, (5, 4), (4, 6)).ok(),
+            Some(true)
+        );
     }
 
     #[test]
@@ -193,16 +315,43 @@ mod tests {
             has_moved: 0,
         };
 
-        assert_eq!(b.theory_valid_move(&board, false, (1, 3), (3, 5)).ok(), Some(true));
-        assert_eq!(b.theory_valid_move(&board, false, (1, 6), (2, 7)).ok(), Some(true));
-        assert_eq!(b.theory_valid_move(&board, false, (1, 6), (3, 8)).ok(), Some(true));
+        assert_eq!(
+            b.theory_valid_move(&board, false, (1, 3), (3, 5)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            b.theory_valid_move(&board, false, (1, 6), (2, 7)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            b.theory_valid_move(&board, false, (1, 6), (3, 8)).ok(),
+            Some(true)
+        );
 
-        assert_eq!(b.theory_valid_move(&board, false, (8, 3), (7, 2)).ok(), Some(true));
-        assert_eq!(b.theory_valid_move(&board, false, (8, 3), (7, 4)).ok(), Some(true));
-        assert_eq!(b.theory_valid_move(&board, false, (8, 3), (6, 5)).ok(), Some(true));
-        assert_eq!(b.theory_valid_move(&board, false, (8, 6), (7, 7)).ok(), Some(true));
-        assert_eq!(b.theory_valid_move(&board, false, (8, 6), (7, 5)).ok(), Some(true));
-        assert_eq!(b.theory_valid_move(&board, false, (8, 6), (6, 4)).ok(), Some(true));
+        assert_eq!(
+            b.theory_valid_move(&board, false, (8, 3), (7, 2)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            b.theory_valid_move(&board, false, (8, 3), (7, 4)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            b.theory_valid_move(&board, false, (8, 3), (6, 5)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            b.theory_valid_move(&board, false, (8, 6), (7, 7)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            b.theory_valid_move(&board, false, (8, 6), (7, 5)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            b.theory_valid_move(&board, false, (8, 6), (6, 4)).ok(),
+            Some(true)
+        );
     }
 
     #[test]
@@ -217,14 +366,35 @@ mod tests {
             has_moved: 0,
         };
 
-        assert_eq!(q.theory_valid_move(&board, false, (1, 4), (4, 7)).ok(), Some(true));
-        assert_eq!(q.theory_valid_move(&board, false, (1, 4), (5, 4)).ok(), Some(true));
-        assert_eq!(q.theory_valid_move(&board, false, (1, 4), (3, 3)).ok(), Some(false)); // try to be a knight
-        assert_eq!(q.theory_valid_move(&board, false, (1, 4), (3, 8)).ok(), Some(false)); // just invalid
+        assert_eq!(
+            q.theory_valid_move(&board, false, (1, 4), (4, 7)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            q.theory_valid_move(&board, false, (1, 4), (5, 4)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            q.theory_valid_move(&board, false, (1, 4), (3, 3)).ok(),
+            Some(false)
+        ); // try to be a knight
+        assert_eq!(
+            q.theory_valid_move(&board, false, (1, 4), (3, 8)).ok(),
+            Some(false)
+        ); // just invalid
 
-        assert_eq!(qa.theory_valid_move(&board, false, (8, 4), (5, 1)).ok(), Some(true));
-        assert_eq!(qa.theory_valid_move(&board, false, (8, 4), (5, 4)).ok(), Some(true));
-        assert_eq!(qa.theory_valid_move(&board, false, (8, 4), (6, 5)).ok(), Some(false)); // try to be a knight
+        assert_eq!(
+            qa.theory_valid_move(&board, false, (8, 4), (5, 1)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            qa.theory_valid_move(&board, false, (8, 4), (5, 4)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            qa.theory_valid_move(&board, false, (8, 4), (6, 5)).ok(),
+            Some(false)
+        ); // try to be a knight
     }
 
     #[test]
@@ -234,13 +404,31 @@ mod tests {
             color: _WHITE_PIECE,
             has_moved: 0,
         };
-        assert_eq!(k.theory_valid_move(&board, false, (1, 5), (2, 6)).ok(), Some(true));
-        assert_eq!(k.theory_valid_move(&board, false, (1, 5), (2, 4)).ok(), Some(true));
-        assert_eq!(k.theory_valid_move(&board, false, (1, 5), (2, 5)).ok(), Some(true));
-        assert_eq!(k.theory_valid_move(&board, false, (2, 5), (1, 5)).ok(), Some(true));
-        assert_eq!(k.theory_valid_move(&board, false, (2, 5), (1, 4)).ok(), Some(true));
+        assert_eq!(
+            k.theory_valid_move(&board, false, (1, 5), (2, 6)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            k.theory_valid_move(&board, false, (1, 5), (2, 4)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            k.theory_valid_move(&board, false, (1, 5), (2, 5)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            k.theory_valid_move(&board, false, (2, 5), (1, 5)).ok(),
+            Some(true)
+        );
+        assert_eq!(
+            k.theory_valid_move(&board, false, (2, 5), (1, 4)).ok(),
+            Some(true)
+        );
 
-        assert_eq!(k.theory_valid_move(&board, false, (2, 5), (1, 3)).ok(), Some(false));
+        assert_eq!(
+            k.theory_valid_move(&board, false, (2, 5), (1, 3)).ok(),
+            Some(false)
+        );
     }
 }
 
@@ -324,9 +512,9 @@ pub trait PieceCommon {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AdjustPiece {
-	piece:(isize, isize),
-	increase_movement:usize,
-	remove_piece: bool
+    piece: (isize, isize),
+    increase_movement: usize,
+    remove_piece: bool,
 }
 
 pub trait PieceTrait: PieceClone + PieceCommon {
@@ -431,14 +619,12 @@ impl PieceTrait for Pawn {
                 {
                     return Ok(false);
                 }
-				
-                return Err(vec![
-					AdjustPiece {
-						piece: (new_position.0-1, new_position.1-1),
-						increase_movement:2,
-						remove_piece:false,
-					}
-				]);
+
+                return Err(vec![AdjustPiece {
+                    piece: (new_position.0 - 1, new_position.1 - 1),
+                    increase_movement: 2,
+                    remove_piece: false,
+                }]);
             }
         }
 
@@ -468,18 +654,13 @@ impl PieceTrait for Pawn {
             /* ... Passant? */
             /* Known bug: Will accept two single steps as one double, I think */
             if self.get_color() == _BLACK_PIECE {
-				let check_w_black_piece = board.table[(position.0 as usize - 1)][(position.1 as usize - 2)]
-				.clone();
+                let check_w_black_piece =
+                    board.table[(position.0 as usize - 1)][(position.1 as usize - 2)].clone();
                 if position.0 == 4
                     && position.1 - 2 >= 0
                     && check_w_black_piece.is_some()
-                    && &check_w_black_piece
-                        .as_ref().unwrap().get_color()
-                        == &_WHITE_PIECE
-                    && check_w_black_piece
-                        .unwrap()
-                        .movement(0)
-                        == 2
+                    && &check_w_black_piece.as_ref().unwrap().get_color() == &_WHITE_PIECE
+                    && check_w_black_piece.unwrap().movement(0) == 2
                     && cmp::max(new_position.0, position.0) - cmp::min(new_position.0, position.0)
                         == 1
                     && cmp::max(new_position.1, position.1) - cmp::min(new_position.1, position.1)
@@ -489,18 +670,13 @@ impl PieceTrait for Pawn {
                     return Ok(true);
                 }
             } else {
-				let check_w_white_piece = board.table[(position.0 as usize - 1)][(position.1 as usize)].clone();
+                let check_w_white_piece =
+                    board.table[(position.0 as usize - 1)][(position.1 as usize)].clone();
                 if position.0 == 5
                     && position.1 - 1 <= 7
                     && check_w_white_piece.is_some()
-                    && &check_w_white_piece
-                        .as_ref().unwrap()
-                        .get_color()
-                        == &_BLACK_PIECE
-                    && check_w_white_piece
-                        .unwrap()
-                        .movement(0)
-                        == 2
+                    && &check_w_white_piece.as_ref().unwrap().get_color() == &_BLACK_PIECE
+                    && check_w_white_piece.unwrap().movement(0) == 2
                     && cmp::max(new_position.0, position.0) - cmp::min(new_position.0, position.0)
                         == 1
                     && cmp::max(new_position.1, position.1) - cmp::min(new_position.1, position.1)
@@ -712,8 +888,12 @@ impl PieceTrait for Queen {
             has_moved: 0,
         };
 
-        if r.theory_valid_move(&board, capture, position, new_position).ok() == Some(true)
-            || b.theory_valid_move(&board, capture, position, new_position).ok() == Some(true)
+        if r.theory_valid_move(&board, capture, position, new_position)
+            .ok()
+            == Some(true)
+            || b.theory_valid_move(&board, capture, position, new_position)
+                .ok()
+                == Some(true)
         {
             return Ok(true);
         }
@@ -887,17 +1067,8 @@ impl Notation for AlgebraicNotation {
         }
 
         if rank != 0 && file != 0 {
-            if self.board.table[(rank - 1)][(file - 1)]
-                .as_ref()
-                .unwrap()
-                .get_identity()
-                == piece.to_string()
-                && self.board.table[(rank - 1)][(file - 1)]
-                    .as_ref()
-                    .unwrap()
-                    .get_color()
-                    == self.turn
-            {
+            let p_piece = self.board.table[(rank - 1)][(file - 1)].as_ref().unwrap();
+            if p_piece.get_identity() == piece.to_string() && p_piece.get_color() == self.turn {
                 matches.push(FoundPiece {
                     piece: piece,
                     position: (rank - 1, file - 1),
@@ -1002,17 +1173,18 @@ impl Notation for AlgebraicNotation {
             if move_occured {
                 break;
             }
-			let test_move = self.board.table[fp.position.0][fp.position.1]
-			.as_ref()
-			.unwrap().theory_valid_move(
-				&self.board,
-				capture,
-				((fp.position.0 + 1) as isize, (fp.position.1 + 1) as isize),
-				(rank as isize, file as isize),
-			);
+            let test_move = self.board.table[fp.position.0][fp.position.1]
+                .as_ref()
+                .unwrap()
+                .theory_valid_move(
+                    &self.board,
+                    capture,
+                    ((fp.position.0 + 1) as isize, (fp.position.1 + 1) as isize),
+                    (rank as isize, file as isize),
+                );
 
-			if test_move.as_ref().is_ok() == true && test_move.as_ref().ok() != Some(&false)
-			|| test_move.as_ref().is_err() == true
+            if test_move.as_ref().is_ok() == true && test_move.as_ref().ok() != Some(&false)
+                || test_move.as_ref().is_err() == true
             {
                 //println!("yes");
                 self.board.table[rank - 1][file - 1] = Some(
@@ -1021,18 +1193,21 @@ impl Notation for AlgebraicNotation {
                         .unwrap()
                         .clone(),
                 );
-				self.board.table[fp.position.0][fp.position.1] = None;
-				if test_move.is_err() {
-					let correct_board = test_move.err().unwrap();
-					for p in correct_board {
-						if p.increase_movement >= 1 {
-							self.board.table[p.piece.0 as usize][p.piece.1 as usize].as_mut().unwrap().movement(p.increase_movement);
-						}
+                self.board.table[fp.position.0][fp.position.1] = None;
+                if test_move.is_err() {
+                    let correct_board = test_move.err().unwrap();
+                    for p in correct_board {
+                        if p.increase_movement >= 1 {
+                            self.board.table[p.piece.0 as usize][p.piece.1 as usize]
+                                .as_mut()
+                                .unwrap()
+                                .movement(p.increase_movement);
+                        }
                         if p.remove_piece {
                             self.board.table[p.piece.0 as usize][p.piece.1 as usize] = None;
                         }
-					}
-				}
+                    }
+                }
                 move_occured = true;
             }
         }
