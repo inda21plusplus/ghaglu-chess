@@ -1024,11 +1024,14 @@ impl Notation for AlgebraicNotation {
 				if !test_move.is_err() {
                 	self.board.table[fp.position.0][fp.position.1] = None;
 				} else {
-					let correct_board = Some(test_move.err()).iter();
+					let correct_board = test_move.err().unwrap();
 					for p in correct_board {
 						if p.increase_movement >= 1 {
-							
+							self.board.table[p.piece.0 as usize][p.piece.1 as usize].as_mut().unwrap().movement(p.increase_movement);
 						}
+                        if p.remove_piece {
+                            self.board.table[p.piece.0 as usize][p.piece.1 as usize] = None;
+                        }
 					}
 				}
                 move_occured = true;
