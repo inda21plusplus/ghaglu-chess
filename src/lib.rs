@@ -54,8 +54,8 @@ mod tests {
 
         assert_eq!(x.theory_valid_move(&board, false, (2, 1), (3, 1)).ok(), Some(true)); /* single step */
         assert_eq!(q.theory_valid_move(&board, false, (7, 1), (6, 1)).ok(), Some(true)); /* single step */
-        assert_eq!(x.theory_valid_move(&board, false, (2, 1), (4, 1)).ok(), Some(true)); /* double step */
-        assert_eq!(q.theory_valid_move(&board, false, (7, 1), (5, 1)).ok(), Some(true)); /* double step */
+        assert_eq!(x.theory_valid_move(&board, false, (2, 1), (4, 1)).err(), Some(vec![AdjustPiece { piece: (3, 0), remove_piece: false, increase_movement: 2 }])); /* double step */
+        assert_eq!(q.theory_valid_move(&board, false, (7, 1), (5, 1)).err(), Some(vec![AdjustPiece { piece: (4, 0), remove_piece: false, increase_movement: 2 }])); /* double step */
 
         board.table[(2)][(0)] = Some(Box::new(xa)); /* insert pawn into table. human-wise: (3,1) => (2,0) in table */
         assert_eq!(xa.theory_valid_move(&board, false, (2, 1), (4, 1)).ok(), Some(false)); /* double step */
@@ -322,7 +322,7 @@ pub trait PieceCommon {
     fn movement(&mut self, movement: usize) -> usize;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct AdjustPiece {
 	piece:(isize, isize),
 	increase_movement:usize,
@@ -426,7 +426,7 @@ impl PieceTrait for Pawn {
                     == 0
             {
                 /* Checking the step before */
-                if board.table[((new_position.0 as usize) - 2)][((new_position.1 as usize) - 1)]
+                if board.table[(new_position.0 as usize) - 2][(new_position.1 as usize) - 1]
                     .is_some()
                 {
                     return Ok(false);
@@ -434,9 +434,9 @@ impl PieceTrait for Pawn {
 				
                 return Err(vec![
 					AdjustPiece {
-						piece: (new_position.0, new_position.1),
+						piece: (new_position.0-1, new_position.1-1),
 						increase_movement:2,
-						remove_piece:false
+						remove_piece:false,
 					}
 				]);
             }
@@ -1021,9 +1021,8 @@ impl Notation for AlgebraicNotation {
                         .unwrap()
                         .clone(),
                 );
-				if !test_move.is_err() {
-                	self.board.table[fp.position.0][fp.position.1] = None;
-				} else {
+				self.board.table[fp.position.0][fp.position.1] = None;
+				if test_move.is_err() {
 					let correct_board = test_move.err().unwrap();
 					for p in correct_board {
 						if p.increase_movement >= 1 {
