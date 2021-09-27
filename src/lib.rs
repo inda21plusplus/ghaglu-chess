@@ -1089,32 +1089,42 @@ impl Notation for AlgebraicNotation {
         let mut capture: bool = false;
         let mut before: Vec<char> = vec![];
         let mut after: Vec<char> = vec![];
+        let mut promotion: char = 0 as char;
 
-        if p_move_chars[1] == 'x' {
-            /* Well, pawn */
+        if p_move_chars.len() == 3 {
+            /* Promotion */
+            before = p_move_chars[..1].to_vec();
+            after = before.clone();
+            before[1] = (before[1] as u8 - 1) as char;
             lookup_piece = 'P';
+            promotion = p_move_chars[1];
         } else {
-            lookup_piece = p_move_chars[0];
-            p_move_chars = p_move_chars[1..].to_vec();
-        }
-
-        if p_move.contains('x') {
-            capture = true;
-            let capture_i = p_move.find('x');
-            match capture_i {
-                Some(i) => {
-                    before = p_move_chars[..i - 1].to_vec();
-                    after = p_move_chars[(i)..].to_vec();
-                }
-                None => (),
-            };
-        } else {
-            if p_move_chars.len() == 4 {
-                before = p_move_chars[..2].to_vec();
-                after = p_move_chars[2..].to_vec();
+            if p_move_chars[1] == 'x' {
+                /* Well, pawn */
+                lookup_piece = 'P';
             } else {
-                before = p_move_chars[..1].to_vec();
-                after = p_move_chars[1..].to_vec();
+                lookup_piece = p_move_chars[0];
+                p_move_chars = p_move_chars[1..].to_vec();
+            }
+
+            if p_move.contains('x') {
+                capture = true;
+                let capture_i = p_move.find('x');
+                match capture_i {
+                    Some(i) => {
+                        before = p_move_chars[..i - 1].to_vec();
+                        after = p_move_chars[(i)..].to_vec();
+                    }
+                    None => (),
+                };
+            } else {
+                if p_move_chars.len() == 4 {
+                    before = p_move_chars[..2].to_vec();
+                    after = p_move_chars[2..].to_vec();
+                } else {
+                    before = p_move_chars[..1].to_vec();
+                    after = p_move_chars[1..].to_vec();
+                }
             }
         }
 
@@ -1187,12 +1197,17 @@ impl Notation for AlgebraicNotation {
                 || test_move.as_ref().is_err() == true
             {
                 //println!("yes");
-                self.board.table[rank - 1][file - 1] = Some(
-                    self.board.table[fp.position.0][fp.position.1]
-                        .as_ref()
-                        .unwrap()
-                        .clone(),
-                );
+                if promotion == 0 as char {
+                    self.board.table[rank - 1][file - 1] = Some(
+                        self.board.table[fp.position.0][fp.position.1]
+                            .as_ref()
+                            .unwrap()
+                            .clone(),
+                    );
+                } else {
+                    self.board.table[rank - 1][file - 1] =
+                        Some(self.board.pieces.get(&promotion).unwrap().clone());
+                }
                 self.board.table[fp.position.0][fp.position.1] = None;
                 if test_move.is_err() {
                     let correct_board = test_move.err().unwrap();
