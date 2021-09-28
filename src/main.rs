@@ -14,7 +14,7 @@ fn main() {
     let mut notat: AlgebraicNotation = Notation::new(board, schackmotor::_WHITE_PIECE);
     //notat.do_move("Be1xe5");
     /* följer standardnotation, se Wikipedia. */
-    notat.do_move("Bc1d2");
+    assert_eq!(notat.do_move("Bc1d2"), true);
     // returnerar true eller false beroende på utfall
     //notat.do_move("Ke1xd2");
 

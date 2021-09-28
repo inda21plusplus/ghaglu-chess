@@ -24,7 +24,6 @@ mod tests {
     fn board_loaded() {
         let mut board = Board::new();
         board.populate_board();
-        println!("{:?}", board.table);
     }
 
     #[test]
@@ -121,8 +120,12 @@ mod tests {
         board.table[3][3] = Some(Box::new(xe));
         // black should capture the white
         assert_eq!(
-            xe.theory_valid_move(&board, true, (4, 4), (3, 3)).ok(),
-            Some(true)
+            xe.theory_valid_move(&board, true, (4, 4), (3, 3)).err(),
+            Some(vec![AdjustPiece {
+                increase_movement: 0,
+                remove_piece: true,
+                piece: (3, 2)
+            }])
         );
 
         // white should capture the black
@@ -134,11 +137,15 @@ mod tests {
             color: _BLACK_PIECE,
             has_moved: 2,
         };
-        board.table[(4)][(4)] = Some(Box::new(xf));
-        board.table[(4)][(5)] = Some(Box::new(xg));
+        board.table[4][4] = Some(Box::new(xf));
+        board.table[4][5] = Some(Box::new(xg));
         assert_eq!(
-            xf.theory_valid_move(&board, true, (5, 5), (6, 6)).ok(),
-            Some(true)
+            xf.theory_valid_move(&board, true, (5, 5), (6, 6)).err(),
+            Some(vec![AdjustPiece {
+                increase_movement: 0,
+                remove_piece: true,
+                piece: (4, 5)
+            }])
         );
     }
 
@@ -163,18 +170,30 @@ mod tests {
         );
         board.table[1][0] = None;
         assert_eq!(
-            r.theory_valid_move(&board, false, (1, 1), (3, 1)).ok(),
-            Some(true)
+            r.theory_valid_move(&board, false, (1, 1), (3, 1)).err(),
+            Some(vec![AdjustPiece {
+                increase_movement: 1,
+                remove_piece: false,
+                piece: (2, 0)
+            }])
         );
 
         /* Sideways */
         assert_eq!(
-            r.theory_valid_move(&board, false, (3, 1), (3, 3)).ok(),
-            Some(true)
+            r.theory_valid_move(&board, false, (3, 1), (3, 3)).err(),
+            Some(vec![AdjustPiece {
+                increase_movement: 1,
+                remove_piece: false,
+                piece: (2, 2)
+            }])
         );
         assert_eq!(
-            r.theory_valid_move(&board, false, (3, 3), (3, 2)).ok(),
-            Some(true)
+            r.theory_valid_move(&board, false, (3, 3), (3, 2)).err(),
+            Some(vec![AdjustPiece {
+                increase_movement: 1,
+                remove_piece: false,
+                piece: (2, 1)
+            }])
         );
 
         /* black */
@@ -184,8 +203,12 @@ mod tests {
         );
         board.table[6][0] = None;
         assert_eq!(
-            ra.theory_valid_move(&board, false, (8, 1), (6, 1)).ok(),
-            Some(true)
+            ra.theory_valid_move(&board, false, (8, 1), (6, 1)).err(),
+            Some(vec![AdjustPiece {
+                increase_movement: 1,
+                remove_piece: false,
+                piece: (5, 0)
+            }])
         );
 
         board.table[5][0] = Some(Box::new(ra)); // place black rook to test capture
@@ -196,8 +219,12 @@ mod tests {
             Some(false)
         );
         assert_eq!(
-            r.theory_valid_move(&board, true, (1, 1), (6, 1)).ok(),
-            Some(true)
+            r.theory_valid_move(&board, true, (1, 1), (6, 1)).err(),
+            Some(vec![AdjustPiece {
+                increase_movement: 1,
+                remove_piece: false,
+                piece: (5, 0)
+            }])
         ); // try capturing black rook
 
         /* just illegal behavior */
@@ -405,29 +432,133 @@ mod tests {
             has_moved: 0,
         };
         assert_eq!(
-            k.theory_valid_move(&board, false, (1, 5), (2, 6)).ok(),
-            Some(true)
+            k.theory_valid_move(&board, false, (1, 5), (2, 6)).err(),
+            Some(vec![AdjustPiece {
+                increase_movement: 1,
+                remove_piece: false,
+                piece: (1, 5)
+            }])
         );
         assert_eq!(
-            k.theory_valid_move(&board, false, (1, 5), (2, 4)).ok(),
-            Some(true)
+            k.theory_valid_move(&board, false, (1, 5), (2, 4)).err(),
+            Some(vec![AdjustPiece {
+                increase_movement: 1,
+                remove_piece: false,
+                piece: (1, 3)
+            }])
         );
         assert_eq!(
-            k.theory_valid_move(&board, false, (1, 5), (2, 5)).ok(),
-            Some(true)
+            k.theory_valid_move(&board, false, (1, 5), (2, 5)).err(),
+            Some(vec![AdjustPiece {
+                increase_movement: 1,
+                remove_piece: false,
+                piece: (1, 4)
+            }])
         );
         assert_eq!(
-            k.theory_valid_move(&board, false, (2, 5), (1, 5)).ok(),
-            Some(true)
+            k.theory_valid_move(&board, false, (2, 5), (1, 5)).err(),
+            Some(vec![AdjustPiece {
+                increase_movement: 1,
+                remove_piece: false,
+                piece: (0, 4)
+            }])
         );
         assert_eq!(
-            k.theory_valid_move(&board, false, (2, 5), (1, 4)).ok(),
-            Some(true)
+            k.theory_valid_move(&board, false, (2, 5), (1, 4)).err(),
+            Some(vec![AdjustPiece {
+                increase_movement: 1,
+                remove_piece: false,
+                piece: (0, 3)
+            }])
         );
 
         assert_eq!(
             k.theory_valid_move(&board, false, (2, 5), (1, 3)).ok(),
             Some(false)
+        );
+    }
+
+    #[test]
+    fn promotion_test() {
+        let mut board = Board::new();
+        board.table[6][4] = Some(Box::new(Pawn {
+            has_moved: 0,
+            color: _WHITE_PIECE,
+        }));
+        let mut algnot: AlgebraicNotation = Notation::new(board, _WHITE_PIECE);
+        assert_eq!(algnot.do_move("e8Q"), true);
+        assert_eq!(
+            algnot.board.table[7][4].as_ref().unwrap().get_identity(),
+            "Q".to_string()
+        );
+        assert_eq!(algnot.board.table[6][4].as_ref().is_some(), false);
+    }
+
+    #[test]
+    fn checkmate_threat_test() {
+        let mut board = Board::new();
+        board.table[2][4] = Some(Box::new(King {
+            has_moved: 0,
+            color: _WHITE_PIECE,
+        }));
+        board.table[2][3] = Some(Box::new(Rook {
+            has_moved: 0,
+            color: _BLACK_PIECE,
+        }));
+        let mut algnot: AlgebraicNotation = Notation::new(board, _WHITE_PIECE);
+        assert_eq!(algnot.do_move("Ke3f3"), false);
+        assert_eq!(algnot.do_move("Ke3xd3"), true);
+    }
+
+    #[test]
+    fn castling_test() {
+        let mut board = Board::new();
+        let mut board2 = Board::new();
+        board.table[0][4] = Some(Box::new(King {
+            has_moved: 0,
+            color: _WHITE_PIECE,
+        }));
+        board.table[0][0] = Some(Box::new(Rook {
+            has_moved: 0,
+            color: _WHITE_PIECE,
+        }));
+        board2.table[0][4] = board.table[0][4].clone();
+        board2.table[0][7] = board.table[0][0].clone();
+        let mut algnot_queen: AlgebraicNotation = Notation::new(board, _WHITE_PIECE);
+        let mut algnot_king: AlgebraicNotation = Notation::new(board2, _WHITE_PIECE);
+
+        /* Queenside castling */
+        assert_eq!(algnot_queen.do_move("0-0-0"), true);
+        assert_eq!(
+            algnot_queen.board.table[0][2]
+                .as_ref()
+                .unwrap()
+                .get_identity(),
+            "K".to_string()
+        );
+        assert_eq!(
+            algnot_queen.board.table[0][3]
+                .as_ref()
+                .unwrap()
+                .get_identity(),
+            "R".to_string()
+        );
+
+        /* Kingside castling */
+        assert_eq!(algnot_king.do_move("0-0"), true);
+        assert_eq!(
+            algnot_king.board.table[0][6]
+                .as_ref()
+                .unwrap()
+                .get_identity(),
+            "K".to_string()
+        );
+        assert_eq!(
+            algnot_king.board.table[0][5]
+                .as_ref()
+                .unwrap()
+                .get_identity(),
+            "R".to_string()
         );
     }
 }
@@ -512,7 +643,7 @@ pub trait PieceCommon {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AdjustPiece {
-    piece: (isize, isize),
+    piece: (usize, usize),
     increase_movement: usize,
     remove_piece: bool,
 }
@@ -522,8 +653,8 @@ pub trait PieceTrait: PieceClone + PieceCommon {
         &self,
         board: &Board,
         capture: bool,
-        position: (isize, isize),
-        new_position: (isize, isize),
+        position: (usize, usize),
+        new_position: (usize, usize),
     ) -> Result<bool, Vec<AdjustPiece>>;
     fn get_identity(&self) -> String;
 }
@@ -576,11 +707,9 @@ impl PieceTrait for Pawn {
         &self,
         board: &Board,
         capture: bool,
-        position: (isize, isize),
-        new_position: (isize, isize),
+        position: (usize, usize),
+        new_position: (usize, usize),
     ) -> Result<bool, Vec<AdjustPiece>> {
-        let check: bool = false;
-
         if new_position.0 < position.0 && self.get_color() == _WHITE_PIECE
             || new_position.0 > position.0 && self.get_color() == _BLACK_PIECE
         {
@@ -589,16 +718,11 @@ impl PieceTrait for Pawn {
 
         if !capture {
             /* Single step */
-            if board.table[((new_position.0 as usize) - 1)][((new_position.1 as usize) - 1)]
-                .is_some()
-            {
+            if board.table[new_position.0 - 1][new_position.1 - 1].is_some() {
                 return Ok(false);
             }
 
-            if
-            /*new_position.0 - position.0 == 1 && new_position.1 - position.1 == 1
-            || */
-            cmp::max(new_position.0, position.0) - cmp::min(new_position.0, position.0) == 1
+            if cmp::max(new_position.0, position.0) - cmp::min(new_position.0, position.0) == 1
                 && new_position.1 - position.1 == 0
             {
                 return Ok(true);
@@ -607,16 +731,14 @@ impl PieceTrait for Pawn {
             /* Double step */
             if cmp::max(new_position.0, position.0) - cmp::min(new_position.0, position.0) == 2
                 && new_position.1 - position.1 == 0
-                && board.table[((position.0 as usize) - 1)][((position.1 as usize) - 1)]
+                && board.table[position.0 - 1][position.1 - 1]
                     .clone()
                     .unwrap()
                     .movement(0)
                     == 0
             {
                 /* Checking the step before */
-                if board.table[(new_position.0 as usize) - 2][(new_position.1 as usize) - 1]
-                    .is_some()
-                {
+                if board.table[new_position.0 - 2][new_position.1 - 1].is_some() {
                     return Ok(false);
                 }
 
@@ -630,17 +752,12 @@ impl PieceTrait for Pawn {
 
         if capture {
             /* Single step */
-            /*if !board.table[((new_position.0 as usize)-1, (new_position.1 as usize)-1)].is_some() {
-                return false;
-            }*/
 
             if cmp::max(new_position.0, position.0) - cmp::min(new_position.0, position.0) == 1
                 && cmp::max(new_position.1, position.1) - cmp::min(new_position.1, position.1) == 1
-                && board.table[((new_position.0 as usize) - 1)][((new_position.1 as usize) - 1)]
-                    .is_some()
-            /*(new_position.1 - position.1 == 1 || (new_position.1 - position.1) == -1) */
+                && board.table[new_position.0 - 1][new_position.1 - 1].is_some()
             {
-                if board.table[((new_position.0 as usize) - 1)][((new_position.1 as usize) - 1)]
+                if board.table[(new_position.0) - 1][(new_position.1) - 1]
                     .clone()
                     .unwrap()
                     .get_color()
@@ -652,12 +769,16 @@ impl PieceTrait for Pawn {
             }
 
             /* ... Passant? */
-            /* Known bug: Will accept two single steps as one double, I think */
+            /* Known bug: Will accept two single steps as one double, I think..? */
+            if position.0 == 0 {
+                return Ok(false);
+            }
             if self.get_color() == _BLACK_PIECE {
-                let check_w_black_piece =
-                    board.table[(position.0 as usize - 1)][(position.1 as usize - 2)].clone();
+                if position.1 <= 1 {
+                    return Ok(false);
+                }
+                let check_w_black_piece = board.table[position.0 - 1][position.1 - 2].clone();
                 if position.0 == 4
-                    && position.1 - 2 >= 0
                     && check_w_black_piece.is_some()
                     && &check_w_black_piece.as_ref().unwrap().get_color() == &_WHITE_PIECE
                     && check_w_black_piece.unwrap().movement(0) == 2
@@ -666,12 +787,15 @@ impl PieceTrait for Pawn {
                     && cmp::max(new_position.1, position.1) - cmp::min(new_position.1, position.1)
                         == 1
                 {
-                    // increase movement
-                    return Ok(true);
+                    //return Ok(true);
+                    return Err(vec![AdjustPiece {
+                        piece: (position.0 - 1, position.1 - 2),
+                        increase_movement: 0,
+                        remove_piece: true,
+                    }]);
                 }
             } else {
-                let check_w_white_piece =
-                    board.table[(position.0 as usize - 1)][(position.1 as usize)].clone();
+                let check_w_white_piece = board.table[position.0 - 1][position.1].clone();
                 if position.0 == 5
                     && position.1 - 1 <= 7
                     && check_w_white_piece.is_some()
@@ -682,13 +806,17 @@ impl PieceTrait for Pawn {
                     && cmp::max(new_position.1, position.1) - cmp::min(new_position.1, position.1)
                         == 1
                 {
-                    //increase movement
-                    return Ok(true);
+                    //return Ok(true);
+                    return Err(vec![AdjustPiece {
+                        piece: (position.0 - 1, position.1),
+                        increase_movement: 0,
+                        remove_piece: true,
+                    }]);
                 }
             }
         }
 
-        Ok(check)
+        Ok(false)
     }
     fn get_identity(&self) -> String {
         "P".to_string()
@@ -701,8 +829,8 @@ impl PieceTrait for Rook {
         &self,
         board: &Board,
         capture: bool,
-        position: (isize, isize),
-        new_position: (isize, isize),
+        position: (usize, usize),
+        new_position: (usize, usize),
     ) -> Result<bool, Vec<AdjustPiece>> {
         /*if position.1 != new_position.1 || position.0 == new_position.0 {
             return false;
@@ -719,11 +847,16 @@ impl PieceTrait for Rook {
                 } else {
                     position.1 - 1 + i
                 };
-                if board.table[(position.0 - 1) as usize][check as usize].is_some() {
+                if board.table[position.0 - 1][check].is_some() {
                     return Ok(false);
                 }
             }
-            return Ok(true);
+            //return Ok(true);
+            return Err(vec![AdjustPiece {
+                piece: (new_position.0 - 1, new_position.1 - 1),
+                increase_movement: 1,
+                remove_piece: false,
+            }]);
         }
 
         if new_position.1 != position.1 {
@@ -732,34 +865,41 @@ impl PieceTrait for Rook {
 
         if new_position.0 > position.0 {
             for i in position.0..new_position.0 - 1 {
-                if (board.table[(i as usize)][((position.1 - 1) as usize)]).is_some() {
-                    //println!("{:?} {:?} {:?}", board.table[(i as usize)][((position.1-1) as usize)], i, position.1-1);
+                if (board.table[i][position.1 - 1]).is_some() {
                     return Ok(false);
                 }
             }
         } else {
             for i in (new_position.0 - 1..position.0 - 1).rev() {
-                if (board.table[(i as usize)][((position.1 - 1) as usize)]).is_some() {
+                if (board.table[i][position.1 - 1]).is_some() {
                     return Ok(false);
                 }
             }
         }
 
         if capture {
-            if board.table[((new_position.0 - 1) as usize)][((new_position.1 - 1) as usize)]
-                .is_some()
-                && board.table[((new_position.0 - 1) as usize)][((new_position.1 - 1) as usize)]
+            if board.table[new_position.0 - 1][new_position.1 - 1].is_some()
+                && board.table[new_position.0 - 1][new_position.1 - 1]
                     .as_ref()
                     .unwrap()
                     .get_color()
                     != self.get_color()
             {
-                return Ok(true);
+                //return Ok(true);
+                return Err(vec![AdjustPiece {
+                    piece: (new_position.0 - 1, new_position.1 - 1),
+                    increase_movement: 1,
+                    remove_piece: false,
+                }]);
             }
         } else {
-            if !board.table[(new_position.0 - 1) as usize][(new_position.1 - 1) as usize].is_some()
-            {
-                return Ok(true);
+            if !board.table[new_position.0 - 1][new_position.1 - 1].is_some() {
+                //return Ok(true);
+                return Err(vec![AdjustPiece {
+                    piece: (new_position.0 - 1, new_position.1 - 1),
+                    increase_movement: 1,
+                    remove_piece: false,
+                }]);
             }
         }
         Ok(false)
@@ -776,15 +916,12 @@ impl PieceTrait for Knight {
         &self,
         board: &Board,
         capture: bool,
-        position: (isize, isize),
-        new_position: (isize, isize),
+        position: (usize, usize),
+        new_position: (usize, usize),
     ) -> Result<bool, Vec<AdjustPiece>> {
         if cmp::max(position.1, new_position.1) - cmp::min(position.1, new_position.1) == 1 {
             if cmp::max(position.0, new_position.0) - cmp::min(position.0, new_position.0) == 2 {
-                if board.table[(new_position.0 - 1) as usize][(new_position.1 - 1) as usize]
-                    .is_some()
-                    && !capture
-                {
+                if board.table[new_position.0 - 1][new_position.1 - 1].is_some() && !capture {
                     return Ok(false);
                 }
                 return Ok(true);
@@ -793,10 +930,7 @@ impl PieceTrait for Knight {
 
         if cmp::max(position.1, new_position.1) - cmp::min(position.1, new_position.1) == 2 {
             if cmp::max(position.0, new_position.0) - cmp::min(position.0, new_position.0) == 1 {
-                if board.table[(new_position.0 - 1) as usize][(new_position.1 - 1) as usize]
-                    .is_some()
-                    && !capture
-                {
+                if board.table[new_position.0 - 1][new_position.1 - 1].is_some() && !capture {
                     return Ok(false);
                 }
                 return Ok(true);
@@ -816,14 +950,11 @@ impl PieceTrait for Bishop {
         &self,
         board: &Board,
         capture: bool,
-        position: (isize, isize),
-        new_position: (isize, isize),
+        position: (usize, usize),
+        new_position: (usize, usize),
     ) -> Result<bool, Vec<AdjustPiece>> {
-        if board.table[(new_position.0 - 1) as usize][(new_position.1 - 1) as usize].is_some()
-            && !capture
-            || (!board.table[(new_position.0 - 1) as usize][(new_position.1 - 1) as usize]
-                .is_some()
-                && capture)
+        if board.table[new_position.0 - 1][new_position.1 - 1].is_some() && !capture
+            || (!board.table[new_position.0 - 1][new_position.1 - 1].is_some() && capture)
         {
             return Ok(false);
         }
@@ -838,22 +969,19 @@ impl PieceTrait for Bishop {
 
                 for i in 1..delta_y {
                     let check;
-                    let check2 = if new_position.0 > position.0 {
-                        check = position.0 - 1 + i;
-                        if new_position.1 > position.1 {
-                            position.1 - 1 + i
+                    let check2 = {
+                        if new_position.0 > position.0 {
+                            check = position.0 - 1 + i;
                         } else {
-                            position.1 - 1 - i
+                            check = position.0 - 1 - i;
                         }
-                    } else {
-                        check = position.0 - 1 - i;
                         if new_position.1 > position.1 {
                             position.1 - 1 + i
                         } else {
                             position.1 - 1 - i
                         }
                     };
-                    if board.table[check as usize][check2 as usize].is_some() {
+                    if board.table[check][check2].is_some() {
                         return Ok(false);
                     }
                 }
@@ -875,8 +1003,8 @@ impl PieceTrait for Queen {
         &self,
         board: &Board,
         capture: bool,
-        position: (isize, isize),
-        new_position: (isize, isize),
+        position: (usize, usize),
+        new_position: (usize, usize),
     ) -> Result<bool, Vec<AdjustPiece>> {
         /* Well, a glorified bishop and rook, and I'm lazy... */
         let r = Rook {
@@ -889,8 +1017,7 @@ impl PieceTrait for Queen {
         };
 
         if r.theory_valid_move(&board, capture, position, new_position)
-            .ok()
-            == Some(true)
+            .is_err()
             || b.theory_valid_move(&board, capture, position, new_position)
                 .ok()
                 == Some(true)
@@ -911,20 +1038,21 @@ impl PieceTrait for King {
         &self,
         board: &Board,
         capture: bool,
-        position: (isize, isize),
-        new_position: (isize, isize),
+        position: (usize, usize),
+        new_position: (usize, usize),
     ) -> Result<bool, Vec<AdjustPiece>> {
         if cmp::max(new_position.0, position.0) - cmp::min(new_position.0, position.0) <= 1
             && cmp::max(new_position.1, position.1) - cmp::min(new_position.1, position.1) <= 1
-        /*|| (cmp::max(new_position.0, position.0) - cmp::min(new_position.0, position.0) == 0 &&
-        cmp::max(new_position.1, position.1) - cmp::min(new_position.1, position.1) == 1)*/
         {
-            if board.table[(new_position.0 - 1) as usize][(new_position.1 - 1) as usize].is_some()
-                && !capture
-            {
+            if board.table[new_position.0 - 1][new_position.1 - 1].is_some() && !capture {
                 return Ok(false);
             }
-            return Ok(true);
+            //return Ok(true);
+            return Err(vec![AdjustPiece {
+                piece: (new_position.0 - 1, new_position.1 - 1),
+                increase_movement: 1,
+                remove_piece: false,
+            }]);
         }
 
         Ok(false)
@@ -1019,7 +1147,15 @@ impl Board {
 pub trait Notation {
     fn new(board: Board, turn: usize) -> Self;
     fn do_move(&mut self, p_move: &str) -> bool;
-    fn find_piece(&self, piece: char, rank: usize, file: usize) -> Vec<FoundPiece>;
+    fn find_piece(
+        &self,
+        board: &Board,
+        piece: char,
+        rank: usize,
+        file: usize,
+        color: usize,
+    ) -> Vec<FoundPiece>;
+    fn check_king_threat(&mut self, board: Board) -> Result<bool, FoundPiece>;
 }
 
 pub struct AlgebraicNotation {
@@ -1028,7 +1164,7 @@ pub struct AlgebraicNotation {
     turn: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct FoundPiece {
     piece: char,
     position: (usize, usize),
@@ -1043,16 +1179,51 @@ impl Notation for AlgebraicNotation {
         }
     }
 
-    fn find_piece(&self, piece: char, rank: usize, file: usize) -> Vec<FoundPiece> {
+    fn find_piece(
+        &self,
+        board: &Board,
+        piece: char,
+        rank: usize,
+        file: usize,
+        color: usize,
+    ) -> Vec<FoundPiece> {
         /* Will currently silently fail if the piece to be moved is not at turn colorwise */
-        //let mut piece:Piece;
         let mut matches: Vec<FoundPiece> = vec![];
         let mut i: usize = 0;
+
+        if rank == 0 && file == 0 {
+            let pieces = &board.table;
+            let mut ir = 0;
+            i = 0;
+            for r in pieces {
+                for p in r {
+                    if p.as_ref().is_none() {
+                        i += 1;
+                        continue;
+                    }
+                    if piece != 0 as char && p.as_ref().unwrap().get_identity() != piece.to_string()
+                    {
+                        i += 1;
+                        continue;
+                    }
+                    if p.as_ref().unwrap().get_color() == color {
+                        matches.push(FoundPiece {
+                            piece: (p.as_ref().unwrap().get_identity())
+                                .chars()
+                                .collect::<Vec<char>>()[0],
+                            position: (ir + 1, i + 1),
+                        });
+                    }
+                    i += 1;
+                }
+                ir += 1;
+                i = 0;
+            }
+        }
 
         if rank != 0 && file == 0 {
             let pieces = &self.board.table[rank - 1];
             for p in pieces {
-                //println!("p: {:?}", p);
                 if p.as_ref().unwrap().get_identity() == piece.to_string()
                     && p.as_ref().unwrap().get_color() == self.turn
                 {
@@ -1067,17 +1238,66 @@ impl Notation for AlgebraicNotation {
         }
 
         if rank != 0 && file != 0 {
-            let p_piece = self.board.table[(rank - 1)][(file - 1)].as_ref().unwrap();
-            if p_piece.get_identity() == piece.to_string() && p_piece.get_color() == self.turn {
-                matches.push(FoundPiece {
-                    piece: piece,
-                    position: (rank - 1, file - 1),
-                });
+            if self.board.table[rank - 1][file - 1].is_some() {
+                let p_piece = self.board.table[rank - 1][file - 1].as_ref().unwrap();
+                if p_piece.get_identity() == piece.to_string() && p_piece.get_color() == self.turn {
+                    matches.push(FoundPiece {
+                        piece: piece,
+                        position: (rank - 1, file - 1),
+                    });
+                }
             }
         }
 
         //self.board.table[(rank, file)].as_ref().unwrap().clone()
         matches
+    }
+
+    fn check_king_threat(&mut self, board: Board) -> Result<bool, FoundPiece> {
+        let king;
+        /* Edge case; e.g. promotion tests... will not impact real sessions */
+        /* it could be in some case possible to endanger the king without triggering the code, but then it's a bug */
+        let temp = self.find_piece(&board, 'K', 0, 0, self.turn);
+        if temp.len() > 0 {
+            king = temp[0];
+        } else {
+            return Ok(false);
+        }
+        let enemy_pieces = self.find_piece(
+            &board,
+            0 as char,
+            0,
+            0,
+            if self.turn == _WHITE_PIECE {
+                _BLACK_PIECE
+            } else {
+                _WHITE_PIECE
+            },
+        );
+        for p in enemy_pieces {
+            if p.position != king.position {
+                /* to account that the king might decide to himself strike down the enemy */
+                let test_move = board.table[p.position.0 - 1][p.position.1 - 1]
+                    .as_ref()
+                    .unwrap()
+                    .theory_valid_move(&board, true, p.position, king.position);
+                if test_move.as_ref().is_ok() == true && test_move.as_ref().ok() != Some(&false)
+                    || test_move.as_ref().is_err() == true
+                {
+                    println!(
+                        "{:?} at ({:?}) threatens king at {:?}",
+                        board.table[p.position.0 - 1][p.position.1 - 1]
+                            .as_ref()
+                            .unwrap()
+                            .get_identity(),
+                        p.position,
+                        king.position
+                    );
+                    return Err(king);
+                }
+            }
+        }
+        Ok(false)
     }
 
     fn do_move(&mut self, p_move: &str) -> bool {
@@ -1090,14 +1310,89 @@ impl Notation for AlgebraicNotation {
         let mut before: Vec<char> = vec![];
         let mut after: Vec<char> = vec![];
         let mut promotion: char = 0 as char;
+        let mut threatened = false;
+        let mut move_occured = false;
+        let mut start: Vec<FoundPiece> = vec![];
 
-        if p_move_chars.len() == 3 {
+        let chmthreat = self.check_king_threat(self.board.clone());
+        if chmthreat.is_err() {
+            threatened = true;
+        }
+
+        if p_move.contains('-') {
+            /* Castling */
+            let mut king_pos = self.find_piece(&self.board, 'K', 0, 0, self.turn)[0].position;
+            king_pos = (king_pos.0 - 1, king_pos.1 - 1);
+            let king = self.board.table[king_pos.0][king_pos.1].as_mut().unwrap();
+            if king.movement(0) > 0 || threatened || !(p_move == "0-0" || p_move == "0-0-0") {
+                return false;
+            }
+
+            let rook_pos_vec = self.find_piece(
+                &self.board,
+                'R',
+                if self.turn == _WHITE_PIECE { 1 } else { 8 },
+                if p_move == "0-0" { 8 } else { 1 },
+                self.turn,
+            );
+            let rook_pos;
+            if rook_pos_vec.len() == 1 {
+                rook_pos = rook_pos_vec[0].position;
+            } else {
+                return false;
+            }
+            //well, different behaviour depending on rank, file.. rook_pos = (rook_pos.0-1, rook_pos.1-1);
+            let rook = self.board.table[rook_pos.0][rook_pos.1].as_mut().unwrap();
+            if rook.movement(0) > 0 {
+                return false;
+            }
+            // delta x is 3
+            for i in 1..3 {
+                let offset = if p_move == "0-0" {
+                    king_pos.1 + i
+                } else {
+                    king_pos.1 - i
+                };
+                if self.board.table[king_pos.0][offset].is_some() {
+                    return false;
+                }
+                let mut tboard = self.board.clone();
+                tboard.table[king_pos.0][offset] = tboard.table[king_pos.0][king_pos.1].clone();
+                tboard.table[king_pos.0][king_pos.1] = None;
+                if self.check_king_threat(tboard).is_err() {
+                    return false;
+                }
+            }
+			// well, queen-sidewise does the rook need to pass this...
+			if p_move == "0-0-0" {
+				for i in 1..4 {
+					if self.board.table[rook_pos.0][rook_pos.1+i].is_some() {
+						return false;
+					}
+				}
+			}
+
+            let final_offset_king: isize = if p_move == "0-0" { 2 } else { -2 };
+            let final_offset_rook: isize = if p_move == "0-0" { -2 } else { 3 };
+            self.board.table[king_pos.0][(king_pos.1 as isize + final_offset_king) as usize] =
+                self.board.table[king_pos.0][king_pos.1].clone();
+            self.board.table[rook_pos.0][(rook_pos.1 as isize + final_offset_rook) as usize] =
+                self.board.table[rook_pos.0][rook_pos.1].clone();
+            self.board.table[king_pos.0][king_pos.1] = None;
+            self.board.table[rook_pos.0][rook_pos.1] = None;
+
+            move_occured = true;
+            lookup_piece = 0 as char; // dumb rust compilator
+        } else if p_move_chars.len() == 3 {
             /* Promotion */
-            before = p_move_chars[..1].to_vec();
+            before = p_move_chars[..2].to_vec();
             after = before.clone();
-            before[1] = (before[1] as u8 - 1) as char;
+            before[1] = ((before[1] as u8) - 1) as char;
             lookup_piece = 'P';
-            promotion = p_move_chars[1];
+            promotion = p_move_chars[2];
+            if promotion == 'P' {
+                return false; // disallow promoting to pawn
+            }
         } else {
             if p_move_chars[1] == 'x' {
                 /* Well, pawn */
@@ -1128,8 +1423,6 @@ impl Notation for AlgebraicNotation {
             }
         }
 
-        //println!("{:?} {:?}", before, after);
-
         if before.len() >= 1 {
             for c in before.iter() {
                 if c.is_alphabetic() {
@@ -1146,20 +1439,19 @@ impl Notation for AlgebraicNotation {
             }
         }
 
-        //println!("{:?} {:?} {:?}", file, rank, before);
-        let start = self.find_piece(lookup_piece, rank, file);
-        //println!("{:?}", start);
-        if start.len() == 0 {
-            //println!("Not found");
-            return false;
+        if !move_occured {
+            start = self.find_piece(&self.board, lookup_piece, rank, file, 0);
+            if start.len() == 0 {
+                return false;
+            }
         }
 
+        let b_rf = (rank, file);
         rank = 0;
         file = 0;
 
         for c in after.iter() {
             if c.is_alphabetic() {
-                //println!("{:?}", before);
                 file = *c as usize - self.base_notation as usize + 1;
             /* theory_valid_move accepts human-wise arg., hence +1 */
             } else {
@@ -1172,13 +1464,26 @@ impl Notation for AlgebraicNotation {
             }
         }
 
-        if rank == 0 || file == 0 {
+        if (rank == 0 || file == 0) && !move_occured {
             println!("Insufficient");
             return false;
         }
 
+        if threatened {
+            if chmthreat.err().unwrap().position != (b_rf.0, b_rf.1) {
+                return false;
+            }
+            // see if the (not yet) validated move would work
+            let mut tboard = self.board.clone();
+            tboard.table[rank - 1][file - 1] = tboard.table[b_rf.0][b_rf.1].clone();
+            tboard.table[b_rf.0][b_rf.1] = None;
+
+            if self.check_king_threat(tboard).is_err() {
+                return false;
+            }
+        }
+
         // Is this valid?
-        let mut move_occured: bool = false;
         for fp in start {
             if move_occured {
                 break;
@@ -1189,14 +1494,13 @@ impl Notation for AlgebraicNotation {
                 .theory_valid_move(
                     &self.board,
                     capture,
-                    ((fp.position.0 + 1) as isize, (fp.position.1 + 1) as isize),
-                    (rank as isize, file as isize),
+                    ((fp.position.0 + 1), (fp.position.1 + 1)),
+                    (rank, file),
                 );
 
             if test_move.as_ref().is_ok() == true && test_move.as_ref().ok() != Some(&false)
                 || test_move.as_ref().is_err() == true
             {
-                //println!("yes");
                 if promotion == 0 as char {
                     self.board.table[rank - 1][file - 1] = Some(
                         self.board.table[fp.position.0][fp.position.1]
@@ -1207,19 +1511,26 @@ impl Notation for AlgebraicNotation {
                 } else {
                     self.board.table[rank - 1][file - 1] =
                         Some(self.board.pieces.get(&promotion).unwrap().clone());
+
+                    if self.turn == _BLACK_PIECE {
+                        self.board.table[rank - 1][file - 1]
+                            .as_mut()
+                            .unwrap()
+                            .set_color(_BLACK_PIECE);
+                    }
                 }
                 self.board.table[fp.position.0][fp.position.1] = None;
                 if test_move.is_err() {
                     let correct_board = test_move.err().unwrap();
                     for p in correct_board {
                         if p.increase_movement >= 1 {
-                            self.board.table[p.piece.0 as usize][p.piece.1 as usize]
+                            self.board.table[p.piece.0][p.piece.1]
                                 .as_mut()
                                 .unwrap()
                                 .movement(p.increase_movement);
                         }
                         if p.remove_piece {
-                            self.board.table[p.piece.0 as usize][p.piece.1 as usize] = None;
+                            self.board.table[p.piece.0][p.piece.1] = None;
                         }
                     }
                 }
@@ -1230,11 +1541,6 @@ impl Notation for AlgebraicNotation {
         if !move_occured {
             return false;
         }
-
-        //println!("{:?}", self.board.table);
-
-        //println!("{:?}", self.board.table[0][2].as_ref().unwrap().theory_valid_move(&self.board, false, (1, 3), (3, 5)) );
-        //println!("{:?} {:?}", file, rank);
 
         if self.turn == _WHITE_PIECE {
             self.turn = _BLACK_PIECE;
